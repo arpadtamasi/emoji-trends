@@ -5,6 +5,7 @@ import javax.inject.Singleton
 import akka.actor.ActorSystem
 import akka.event.{Logging, LoggingAdapter}
 import akka.stream.Materializer
+import com.acme.emojitrends.persistence.RedisEmojiCounterDao
 import com.acme.emojitrends.stream.EmojiCounter
 import com.google.inject.{AbstractModule, Provides}
 import com.typesafe.config.ConfigFactory
@@ -18,11 +19,12 @@ class EmojiTrendsModule extends AbstractModule with ScalaModule {
   override def configure(): Unit = {
     install(new TwitterModule(config.getConfig("twitter")))
     install(new AkkaModule(config.getConfig("akka")))
+    install(new RedisModule(config.getConfig("redis")))
   }
 
   @Provides
   @Singleton
-  def provideEmojiCounter
+  def provideEmojiCounter(dao: RedisEmojiCounterDao)
     (implicit system: ActorSystem,
       ec: ExecutionContext,
       materializer: Materializer): EmojiCounter = {
@@ -32,6 +34,6 @@ class EmojiTrendsModule extends AbstractModule with ScalaModule {
     val configuration = EmojiCounter.Configuration(
       counterConfig.getInt("bufferSize")
     )
-    new EmojiCounter(configuration)
+    new EmojiCounter(dao, configuration)
   }
 }
